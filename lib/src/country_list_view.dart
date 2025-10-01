@@ -109,40 +109,50 @@ class _CountryListViewState extends State<CountryListView> {
 
     // Handle favorites based on showPinFavorites setting
     if (widget.favorite != null && widget.favorite!.isNotEmpty) {
+      // Create a map for quick country lookup by country code
+      final Map<String, Country> countryMap = {
+        for (final country in _countryList) country.countryCode: country,
+      };
+
       if (widget.showPinFavorites) {
-        // Extract favorites for separate pinned section
+        // Extract favorites for separate pinned section in the specified order
+        _favoriteList = [];
         final Set<String> favoriteSet = widget.favorite!.toSet();
 
-        _favoriteList = [];
-        final List<Country> remainingCountries = [];
-
-        // Separate favorites from main list to avoid duplication
-        for (final country in _countryList) {
-          if (favoriteSet.contains(country.countryCode)) {
+        // Build favorites list in the order specified in widget.favorite
+        for (final countryCode in widget.favorite!) {
+          final country = countryMap[countryCode];
+          if (country != null) {
             _favoriteList!.add(country);
-          } else {
-            remainingCountries.add(country);
           }
         }
 
-        _countryList = remainingCountries;
+        // Remove favorites from main list to avoid duplication
+        _countryList.removeWhere(
+          (country) => favoriteSet.contains(country.countryCode),
+        );
       } else {
-        // Move favorites to the beginning - optimal O(n) algorithm
+        // Move favorites to the beginning in the specified order
         final Set<String> favoriteSet = widget.favorite!.toSet();
-
         final List<Country> favorites = [];
         final List<Country> nonFavorites = [];
 
-        // Single pass through the list - O(n) with O(1) lookup
-        for (final country in _countryList) {
-          if (favoriteSet.contains(country.countryCode)) {
+        // Build favorites list in the order specified in widget.favorite
+        for (final countryCode in widget.favorite!) {
+          final country = countryMap[countryCode];
+          if (country != null) {
             favorites.add(country);
-          } else {
+          }
+        }
+
+        // Build non-favorites list
+        for (final country in _countryList) {
+          if (!favoriteSet.contains(country.countryCode)) {
             nonFavorites.add(country);
           }
         }
 
-        // Rebuild list: favorites first, then non-favorites
+        // Rebuild list: favorites first (in specified order), then non-favorites
         _countryList = [...favorites, ...nonFavorites];
       }
     }
